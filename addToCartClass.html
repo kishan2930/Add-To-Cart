@@ -1,0 +1,343 @@
+<html>
+  <head>
+    <script type="text/javascript">
+      class Product {
+        constructor(name, price) {
+          this.name = name;
+          this.price = price;
+        }
+      }
+
+      class CartItem {
+        constructor(product, quantity) {
+          this.product = product;
+          this.quantity = quantity;
+        }
+
+        getTotalPrice() {
+          return this.product.price * this.quantity;
+        }
+      }
+
+      class Cart {
+        constructor() {
+          this.items = [];
+          this.totalPrice = 0;
+        }
+
+        addItem(cartItem) {
+          this.items.push(cartItem);
+          this.totalPrice += cartItem.getTotalPrice();
+        }
+
+        // clearCart() {
+        //   this.items = [];
+        //   this.totalPrice = 0;
+        // }
+
+        getCartDetails() {
+          let details = "Products:\n\n";
+          this.items.forEach((item) => {
+            details += `${item.product.name} [$${item.product.price} x ${
+              item.quantity
+            }] : $${item.getTotalPrice()}\n`;
+          });
+          return details;
+        }
+      }
+
+      class Customer {
+        constructor(name, email, phone) {
+          this.name = name;
+          this.email = email;
+          this.phone = phone;
+        }
+      }
+
+      class Order {
+        constructor(customer, cart) {
+          this.customer = customer;
+          this.cart = cart;
+        }
+
+        getOrderDetails() {
+          let details = `Customer: ${this.customer.name}\nEmail: ${this.customer.email}\nPhone: ${this.customer.phone}\n\n`;
+          details += this.cart.getCartDetails();
+          details += `\nTotal Price: $${this.cart.totalPrice}\n`;
+          return details;
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <form name="productForm">
+      <h2>Product Form</h2>
+      <label for="product">Product : </label>
+      <select
+        name="product"
+        id="product"
+        onchange="calculateTotalPrice()"
+        required
+      >
+        <option value="">Choose Product</option>
+        <option value="Mouse">Mouse - $20</option>
+        <option value="Keyboard">Keyboard - $30</option>
+        <option value="Monitor">Monitor - $150</option>
+        <option value="Printer">Printer - $100</option>
+        <option value="USB Drive">USB Drive - $10</option>
+        <option value="Laptop">Laptop - $500</option>
+        <option value="Webcam">Webcam - $40</option>
+        <option value="Headphones">Headphones - $25</option></select
+      ><br /><br />
+
+      <label for="quantity">Quantity : </label>
+      <input
+        type="number"
+        id="quantity"
+        value="1"
+        min="1"
+        oninput="calculateTotalPrice()"
+        required
+      />
+      = <input type="text" id="totalPrice" readonly /><br /><br />
+
+      <label for="totalProPrice">Total Price : </label>
+      <input type="text" id="totalProPrice" readonly /><br /><br />
+
+      <button type="button" onclick="addToCart()">Add to Cart</button
+      ><br /><br />
+      <textarea
+        name="productDetailsTextarea"
+        readonly="true"
+        value=""
+        id="productDetailsTextarea"
+        cols="50"
+        rows="8"
+      ></textarea>
+      <br />
+    </form>
+    <hr />
+    <form id="customerInfoForm">
+      <h2>Customer Information</h2>
+      <label for="customerName">Name : </label>
+      <input type="text" id="customerName" required />
+      <br /><br />
+      <label for="customerEmail">Email : </label>
+      <input type="email" id="customerEmail" required />
+      <br /><br />
+      <label for="customerPhone">Phone Number : </label>
+      <input
+        type="text"
+        id="customerPhone"
+        required
+        pattern="[1-9]{1}[0-9]{9}"
+      />
+      <br /><br />
+      <button type="button" onclick="orderProduct()">Order Product</button
+      ><br /><br />
+      <textarea
+        id="customerDetailsTextarea"
+        cols="50"
+        rows="8"
+        readonly
+      ></textarea>
+    </form>
+    <hr />
+    <form id="showDetailsForm">
+      <h2>Order Details</h2>
+      <textarea id="showDetailsTextarea" cols="50" rows="8" readonly></textarea
+      ><br /><br />
+      <label for="recordNumber">Record : </label>
+      <input type="number" id="recordNumber" min="1" />
+      <button type="button" onclick="goToRecord()">Go To</button>
+      <br /><br />
+      <button type="button" onclick="showFirstRecord()">First</button>
+      <button type="button" onclick="showPreviousRecord()">Previous</button>
+      <button type="button" onclick="showNextRecord()">Next</button>
+      <button type="button" onclick="showLastRecord()">Last</button>
+    </form>
+    <script type="text/javascript">
+      const productList = {
+        Mouse: new Product("Mouse", 20),
+        Keyboard: new Product("Keyboard", 30),
+        Monitor: new Product("Monitor", 150),
+        Printer: new Product("Printer", 100),
+        "USB Drive": new Product("USB Drive", 10),
+        Laptop: new Product("Laptop", 500),
+        Webcam: new Product("Webcam", 40),
+        Headphones: new Product("Headphones", 25),
+      };
+
+      let cart = new Cart();
+      let customerOrders = [];
+      let currentOrderIndex = -1;
+
+      function calculateTotalPrice() {
+        document.getElementById("customerDetailsTextarea").value = "";
+        const productName = document.getElementById("product").value;
+        const product = productList[productName];
+        const quantity = parseInt(document.getElementById("quantity").value);
+
+        if (product && quantity > 0) {
+          document.getElementById("totalPrice").value = `$${
+            product.price * quantity
+          }`;
+        } else {
+          document.getElementById("totalPrice").value = "";
+        }
+      }
+
+      function addToCart() {
+        const productName = document.getElementById("product").value;
+        const newQuantity = parseInt(document.getElementById("quantity").value);
+
+        if (!productName) {
+          alert("Please choose a product.");
+          return;
+        }
+
+        if (newQuantity < 1) {
+          alert("Please choose a quantity of at least 1.");
+          return;
+        }
+
+        const product = productList[productName];
+        let existingCartItem = cart.items.find(
+          (item) => item.product.name === productName
+        );
+
+        if (existingCartItem) {
+          // Update total price by subtracting the old total price for this item
+          cart.totalPrice -= existingCartItem.getTotalPrice();
+
+          // Update the quantity and recalculate the total price for this item
+          existingCartItem.quantity = newQuantity;
+
+          // Add the new total price for this item back to the cart's total price
+          cart.totalPrice += existingCartItem.getTotalPrice();
+        } else {
+          // If the product is not in the cart, add it as a new cart item
+          const cartItem = new CartItem(product, newQuantity);
+          cart.addItem(cartItem);
+        }
+        // console.log(cart);
+        // Update the total price and the cart details in the UI
+        document.getElementById("totalProPrice").value = `$${cart.totalPrice}`;
+        document.getElementById("productDetailsTextarea").value =
+          cart.getCartDetails();
+
+        // Reset form fields
+        document.getElementById("product").value = "";
+        document.getElementById("quantity").value = "1";
+        document.getElementById("totalPrice").value = "";
+      }
+
+      function orderProduct() {
+        const name = document.getElementById("customerName").value.trim();
+        const email = document.getElementById("customerEmail").value.trim();
+        const phone = document.getElementById("customerPhone").value.trim();
+
+        if (!/^[a-zA-Z\s'-]+$/.test(name)) {
+          alert("Name cannot be empty.");
+          return;
+        }
+
+        if (
+          !/^([a-z A-Z 0-9 _\.\-])+\@(([a-z A-Z 0-9\-])+\.)+([a-z A-z 0-9]{2,3})+$/.test(
+            email
+          )
+        ) {
+          alert("Please enter a valid email.");
+          return;
+        }
+
+        if (!/^[1-9]{1}[0-9]{9}$/.test(phone)) {
+          alert("Please enter a valid 10-digit phone number.");
+          return;
+        }
+
+        if (cart.items.length === 0) {
+          alert("Please add products to the cart before ordering.");
+          return;
+        }
+
+        const customer = new Customer(name, email, phone);
+        const order = new Order(customer, cart);
+        // console.log(order);
+
+        customerOrders.push(order);
+        currentOrderIndex = customerOrders.length - 1;
+
+        document.getElementById("customerDetailsTextarea").value =
+          order.getOrderDetails();
+
+        // Now that the order has been created and stored, clear the cart
+        // console.log(cart);
+        cart = new Cart();
+        // console.log(cart);
+        // Reset the form fields
+        document.getElementById("totalProPrice").value = "";
+        document.getElementById("productDetailsTextarea").value = "";
+        document.getElementById("customerName").value = "";
+        document.getElementById("customerEmail").value = "";
+        document.getElementById("customerPhone").value = "";
+
+        displayOrderDetails();
+      }
+
+      function displayOrderDetails() {
+        // document.getElementById("customerDetailsTextarea").value = "";
+        if (
+          currentOrderIndex >= 0 &&
+          currentOrderIndex < customerOrders.length
+        ) {
+          const order = customerOrders[currentOrderIndex];
+          document.getElementById("showDetailsTextarea").value =
+            order.getOrderDetails();
+        }
+      }
+
+      // Navigation functions
+      function goToRecord() {
+        document.getElementById("customerDetailsTextarea").value = "";
+        const recordNumber = parseInt(
+          document.getElementById("recordNumber").value
+        );
+        if (recordNumber >= 1 && recordNumber <= customerOrders.length) {
+          currentOrderIndex = recordNumber - 1;
+          displayOrderDetails();
+        } else {
+          alert("Invalid record number.");
+        }
+      }
+
+      function showFirstRecord() {
+        document.getElementById("customerDetailsTextarea").value = "";
+        currentOrderIndex = 0;
+        displayOrderDetails();
+      }
+
+      function showPreviousRecord() {
+        document.getElementById("customerDetailsTextarea").value = "";
+        if (currentOrderIndex > 0) {
+          currentOrderIndex--;
+          displayOrderDetails();
+        }
+      }
+
+      function showNextRecord() {
+        document.getElementById("customerDetailsTextarea").value = "";
+        if (currentOrderIndex < customerOrders.length - 1) {
+          currentOrderIndex++;
+          displayOrderDetails();
+        }
+      }
+
+      function showLastRecord() {
+        document.getElementById("customerDetailsTextarea").value = "";
+        currentOrderIndex = customerOrders.length - 1;
+        displayOrderDetails();
+      }
+    </script>
+  </body>
+</html>
